@@ -1,7 +1,9 @@
 //page js
 var loc = false, locip;
 var noNewSegs = false;
-var isOn = false, isInfo = false, isNodes = false, isRgbw = false, cct = false;
+var isOn = false, nlA = false, syncSend = false, isNl = false, isPresetSaver = false, isInfo = false, isNodes = false, isEffectBuilder = false, isRgbw = false, cct = false;
+var nlDur = 60, nlTar = 0;
+var nlMode = true;
 var whites = [0,0,0];
 var selColors;
 var powered = [true];
@@ -452,18 +454,23 @@ function populatePresets()
 	pQL = [];
 	var is = [];
 	pNum = 0;
-	for (var key of (arr||[]))
+	if (arr.length > 0) 
 	{
-		if (!isObj(key[1])) continue;
-		let i = parseInt(key[0]);
-		var qll = key[1].ql;
-		if (qll) pQL.push([i, qll, pName(i)]);
-		is.push(i);
+		for (var key of (arr||[]))
+		{
+			if (!isObj(key[1])) continue;
+			let i = parseInt(key[0]);
+			var qll = key[1].ql;
+			if (qll) pQL.push([i, qll, pName(i)]);
+			is.push(i);
 
-		cn += `<div class="lstI c pres" id="p${i}o" onclick="setPreset(${i})">`;
-		//if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-		cn += `${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}<span class="lstIname">${pName(i)}</span></div>`;
-    	pNum++;
+			cn += `<div class="lstI c pres" id="p${i}o" onclick="setPreset(${i})">`;
+			//if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
+			cn += `${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}<span class="lstIname">${pName(i)}</span></div>`;
+			pNum++;
+		}  
+	} else {
+		cn = '<p class="" id="pNAqlb">You have no presets yet. Create an effect to get started!</p>'
 	}
 	gId('pcont').innerHTML = cn;
 	updatePA();
@@ -789,8 +796,8 @@ function updateTrail(e)
 //rangetouch slider function
 function toggleBubble(e)
 {
-	var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
-	b.classList.toggle('sliderbubbleshow');
+	// var b = e.target.parentNode.parentNode.getElementsByTagName('output')[0];
+	// b.classList.toggle('sliderbubbleshow');
 }
 
 function updatePA()
@@ -814,6 +821,8 @@ function updatePA()
 function updateUI()
 {
 	gId('buttonPower').className = (isOn) ? "active":"";
+	gId('buttonNl').className = (nlA) ? 'active':'';
+	gId('buttonSync').className = (syncSend) ? 'active':'';
 
 	var sel = 0;
 	if (lJson && lJson.length) {
@@ -1032,23 +1041,174 @@ function togglePower()
 	requestJson(obj);
 }
 
+function toggleSync()
+{
+	syncSend = !syncSend;
+	if (syncSend) showToast('Other lights in the network will now sync to this one.');
+	else showToast('This light and other lights in the network will no longer sync.');
+	var obj = {"udpn": {"send": syncSend}};
+	if (syncTglRecv) obj.udpn.recv = syncSend;
+	requestJson(obj);
+}
+
+// function toggleNl()
+// {
+// 	nlA = !nlA;
+// 	if (nlA)
+// 	{
+// 		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlMode ? "over":"after"} ${nlDur} minutes.`);
+// 	} else {
+// 		showToast('Timer deactivated.');
+// 	}
+// 	var obj = {"nl": {"on": nlA}};
+// 	requestJson(obj);
+// }
+
 function toggleInfo()
 {
 	if (isNodes) toggleNodes();
+	if (isNl) toggleNl();
+	if (isEffectBuilder) toggleEffectBuilder();
+	if (isPresetSaver) togglePresetSaver();
 	isInfo = !isInfo;
 	if (isInfo) requestJson();
 	gId('info').style.transform = (isInfo) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonI').className = (isInfo) ? "active":"";
 }
 
+function setNl(dur)
+{
+	nlA = dur != 0;
+	nlDur = dur;
+	if (nlA)
+	{
+		showToast(`Timer active. Your light will turn ${nlTar > 0 ? "on":"off"} ${nlMode ? "over":"after"} ${nlDur} minutes.`);
+		toggleNl()
+	} else {
+		showToast('Timer deactivated.');
+	}
+	gId('buttonNl').className = (nlA) ? "active":"";
+	var obj = {"nl": {"on": nlA, "dur": nlDur}};
+	requestJson(obj);
+}
+
+function clickNl(){
+	nlA? setNl(0) : toggleNl()
+}
+
+function toggleNl()
+{
+	if (isNodes) toggleNodes();
+	if (isInfo) toggleInfo();
+	if (isEffectBuilder) toggleEffectBuilder();
+	if (isPresetSaver) togglePresetSaver();
+	isNl = !isNl;
+	// if (isNl) requestJson();
+	gId('timer').style.transform = (isNl) ? "translateY(0px)":"translateY(100%)";
+}
+
 function toggleNodes()
 {
 	if (isInfo) toggleInfo();
+	if (isNl) toggleNl();
+	if (isEffectBuilder) toggleEffectBuilder();
+	if (isPresetSaver) togglePresetSaver();
 	isNodes = !isNodes;
 	if (isNodes) loadNodes();
 	gId('nodes').style.transform = (isNodes) ? "translateY(0px)":"translateY(100%)";
 	gId('buttonNodes').className = (isNodes) ? "active":"";
 }
+
+function toggleEffectBuilder()
+{
+	if (isInfo) toggleInfo();
+	if (isNl) toggleNl();
+	if (isNodes) toggleNodes();
+	if (isPresetSaver) togglePresetSaver();
+	isEffectBuilder = !isEffectBuilder;
+	// if (isEffectBuilder) loadEffectBuilder();
+	gId('effectBuilder').style.transform = (isEffectBuilder) ? "translateY(0px)":"translateY(100%)";
+}
+
+function togglePresetSaver()
+{
+	if (isInfo) toggleInfo();
+	if (isNl) toggleNl();
+	if (isNodes) toggleNodes();
+	if (isEffectBuilder) toggleEffectBuilder();
+	isPresetSaver = !isPresetSaver;
+	gId('presetSaver').style.transform = (isPresetSaver) ? "translateY(0px)":"translateY(100%)";
+}
+
+function saveP(i,pl)
+{
+	pI = parseInt(gId(`p${i}id`).value);
+	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
+	if (pI > 250) {alert("Preset ID must be 250 or less."); return;}
+	pN = gId(`p${i}txt`).value;
+	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
+	var obj = {};
+	if (!gId(`p${i}cstgl`).checked) {
+		var raw = gId(`p${i}api`).value;
+		try {
+			obj = JSON.parse(raw);
+		} catch (e) {
+			obj.win = raw;
+			if (raw.length < 2) {
+				gId(`p${i}warn`).innerHTML = "&#9888; Please enter your API command first";
+				return;
+			} else if (raw.indexOf('{') > -1) {
+				gId(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
+				return;
+			} else if (raw.indexOf("Please") == 0) {
+				gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
+				return;
+			}
+		}
+		obj.o = true;
+	} else {
+		if (pl) {
+			obj.playlist = plJson[i];
+			obj.on = true;
+			obj.o = true;
+		} else {
+			obj.ib = gId(`p${i}ibtgl`).checked;
+			obj.sb = gId(`p${i}sbtgl`).checked;
+			obj.sc = gId(`p${i}sbchk`).checked;
+			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
+		}
+	}
+
+	obj.psave = pI; obj.n = pN;
+	var pQN = gId(`p${i}ql`).value;
+	if (pQN.length > 0) obj.ql = pQN;
+
+	showToast("Saving " + pN +" (" + pI + ")");
+	requestJson(obj);
+	if (obj.o) {
+		pJson[pI] = obj;
+		delete pJson[pI].psave;
+		delete pJson[pI].o;
+		delete pJson[pI].v;
+		delete pJson[pI].time;
+	} else {
+		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
+		if (obj.win) pJson[pI].win = obj.win;
+		if (obj.ql)  pJson[pI].ql = obj.ql;
+	}
+	populatePresets();
+	// resetPUtil();
+	setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
+}
+
+function getLowestUnusedP()
+{
+	var l = 1;
+	for (var key in pJson) if (key == l) l++;
+	if (l > 250) l = 250;
+	return l;
+}
+
 /*
 function tglBri(b=null)
 {
@@ -1087,9 +1247,11 @@ function selSeg(s)
 
 function tglPalDropdown()
 {
-	var p = gId('palDropdown').style;
-	p.display = (p.display==='block'?'none':'block');
-	gId('fxDropdown').style.display = 'none';
+	var element = gId("palDropdown"); // Using a class instead, see note below.
+	element.classList.toggle('animated');
+	var p = element.style;
+	//p.display = (p.display==='block'?'none':'block');
+	gId('fxDropdown').classList.remove('animated');
 	if (p.display==='block')
 		gId('palDropdown').scrollIntoView({
 			behavior: 'smooth',
@@ -1099,9 +1261,11 @@ function tglPalDropdown()
 
 function tglFxDropdown()
 {
-	var p = gId('fxDropdown').style;
-	p.display = (p.display==='block'?'none':'block');
-	gId('palDropdown').style.display = 'none';
+	var element = gId("fxDropdown"); // Using a class instead, see note below.
+	element.classList.toggle('animated');
+	var p = element.style;
+	//p.display = (p.display==='block'?'none':'block');
+	gId('palDropdown').classList.remove('animated');
 	if (p.display==='block')
 		gId('fxDropdown').scrollIntoView({
 			behavior: 'smooth',
