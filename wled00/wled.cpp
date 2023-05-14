@@ -319,8 +319,7 @@ void WLED::setup()
   DEBUG_PRINT(F("esp8266 "));
   DEBUG_PRINTLN(ESP.getCoreVersion());
 #endif
-  DEBUG_PRINT(F("heap "));
-  DEBUG_PRINTLN(ESP.getFreeHeap());
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   #if defined(ARDUINO_ARCH_ESP32) && defined(WLED_USE_PSRAM)
   if (psramFound()) {
@@ -354,6 +353,8 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Registering usermods ..."));
   registerUsermods();
+
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   for (uint8_t i=1; i<WLED_MAX_BUTTONS; i++) btnPin[i] = -1;
 
@@ -395,10 +396,12 @@ void WLED::setup()
 
   DEBUG_PRINTLN(F("Initializing strip"));
   beginStrip();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   DEBUG_PRINTLN(F("Usermods setup"));
   userSetup();
   usermods.setup();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   if (strcmp(clientSSID, DEFAULT_CLIENT_SSID) == 0)
     showWelcomePage = true;
@@ -454,7 +457,9 @@ void WLED::setup()
 #endif
 
   // HTTP server page init
+  DEBUG_PRINTLN(F("initServer"));
   initServer();
+  DEBUG_PRINT(F("heap ")); DEBUG_PRINTLN(ESP.getFreeHeap());
 
   enableWatchdog();
 
@@ -500,6 +505,9 @@ void WLED::initAP(bool resetAP)
   DEBUG_PRINTLN(apSSID);
   WiFi.softAPConfig(IPAddress(4, 3, 2, 1), IPAddress(4, 3, 2, 1), IPAddress(255, 255, 255, 0));
   WiFi.softAP(apSSID, apPass, apChannel, apHide);
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  #endif
 
   if (!apActive) // start captive portal if AP active
   {
@@ -583,6 +591,24 @@ bool WLED::initEthernet()
     return false;
   }
 
+   /*
+  For LAN8720 the most correct way is to perform clean reset each time before init
+  applying LOW to power or nRST pin for at least 100 us (please refer to datasheet, page 59)
+  ESP_IDF > V4 implements it (150 us, lan87xx_reset_hw(esp_eth_phy_t *phy) function in 
+  /components/esp_eth/src/esp_eth_phy_lan87xx.c, line 280)
+  but ESP_IDF < V4 does not. Lets do it:
+  [not always needed, might be relevant in some EMI situations at startup and for hot resets]
+  */
+  #if ESP_IDF_VERSION_MAJOR==3
+  if(es.eth_power>0 && es.eth_type==ETH_PHY_LAN8720) {
+    pinMode(es.eth_power, OUTPUT);
+    digitalWrite(es.eth_power, 0);
+    delayMicroseconds(150);
+    digitalWrite(es.eth_power, 1);
+    delayMicroseconds(10);
+  }
+  #endif
+
   if (!ETH.begin(
                 (uint8_t) es.eth_address,
                 (int)     es.eth_power,
@@ -657,8 +683,10 @@ void WLED::initConnection()
 #endif
 
   WiFi.begin(clientSSID, clientPass);
-
 #ifdef ARDUINO_ARCH_ESP32
+  #if defined(LOLIN_WIFI_FIX) && (defined(ARDUINO_ARCH_ESP32C3) || defined(ARDUINO_ARCH_ESP32S2))
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);
+  #endif
   WiFi.setSleep(!noWifiSleep);
   WiFi.setHostname(hostname);
 #else
@@ -750,6 +778,8 @@ void WLED::handleConnection()
       DEBUG_PRINTLN(heap);
       forceReconnect = true;
       strip.purgeSegments(true); // remove all but one segments from memory
+    } else if (heap < MIN_HEAP_SIZE) {
+      strip.purgeSegments();
     }
     lastHeap = heap;
     heapTime = now;

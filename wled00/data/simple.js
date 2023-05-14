@@ -558,7 +558,7 @@ function populateSegments(s)
 	<div class="il">
 		<i class="icons slider-icon pwr ${powered[i] ? "act":""}" id="seg${i}pwr" onclick="setSegPwr(${i})" title="${inst.n}">&#xe08f;</i>
 		<div id="sliderSeg${i}Bri" class="sliderwrap il">
-			<input id="seg${i}bri" class="noslide" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
+			<input id="seg${i}bri" onchange="setSegBri(${i})" oninput="updateTrail(this)" max="255" min="1" type="range" value="${inst.bri}" />
 			<div class="sliderdisplay"></div>
 		</div>
 		<output class="sliderbubble"></output>
@@ -1543,7 +1543,7 @@ function hasIroClass(classList)
 	}
 	return false;
 }
-
+//required by rangetouch.js
 function lock(e)
 {
 	var l = e.target.classList;
@@ -1556,7 +1556,7 @@ function lock(e)
 
 	_C.classList.toggle('smooth', !(locked = true));
 }
-
+//required by rangetouch.js
 function move(e)
 {
 	if(!locked) return;
