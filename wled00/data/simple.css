@@ -97,7 +97,7 @@ button {
 	min-height: 40px;
 }
 button:hover {
-    background: var(--c-4);
+    background: var(--c-3);
 }
 
 .label {
@@ -485,7 +485,7 @@ input[type=range]::-moz-range-thumb {
 }
 
 #Presets .list {
-	max-height: 215px;
+	max-height: 240px;
 	overflow-y: scroll;
 	overflow-x: hidden;
 	width: 280px;
@@ -807,7 +807,7 @@ input[type=number]::-webkit-outer-spin-button {
 	background-color: var(--c-2);
 	overflow: hidden;
 	border-radius: 20px;
-	display: block;
+	display: flex;
 	position: relative;
 	border: 1px solid var(--c-2);
 	padding: 8px 10px;
@@ -821,6 +821,13 @@ input[type=number]::-webkit-outer-spin-button {
 
 .lstI:hover {
     background: var(--c-4);
+}
+
+.pdel {
+	font-family: 'WIcons';
+	font-style: normal;
+	font-size: 24px;
+	border-radius: 10px;
 }
 /*
 .lstI:last-child {
@@ -839,6 +846,8 @@ input[type=number]::-webkit-outer-spin-button {
 .lstIname {
 	white-space: nowrap;
 	cursor: pointer;
+	flex-grow: 1;
+	line-height: 40px;
 }
 
 .lstIprev {

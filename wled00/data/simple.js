@@ -464,13 +464,16 @@ function populatePresets()
 			if (qll) pQL.push([i, qll, pName(i)]);
 			is.push(i);
 
-			cn += `<div class="lstI c pres" id="p${i}o" onclick="setPreset(${i})">`;
-			//if (cfg.comp.pid) cn += `<div class="pid">${i}</div>`;
-			cn += `${isPlaylist(i)?"<i class='icons btn-icon'>&#xe139;</i>":""}<span class="lstIname">${pName(i)}</span></div>`;
+			cn +=  `<div class="lstI c pres" id="p${i}o" onclick="setPreset(${i})">
+						<span class="lstIname">${pName(i)}</span>
+						<button class="pdel" id="p${i}del" onclick="delP(event, ${i})">
+							<i class="pdel">&#xe037;</i>
+						</button>
+					</div>`;
 			pNum++;
 		}  
 	} else {
-		cn = '<p class="" id="pNAqlb">You have no presets yet. Create an effect to get started!</p>'
+		cn = '<p class="" id="pNAqlb">If you like how the HyperCube looks, save the effect as a preset. Create an effect to get started!</p>'
 	}
 	gId('pcont').innerHTML = cn;
 	updatePA();
@@ -1140,64 +1143,23 @@ function togglePresetSaver()
 	gId('presetSaver').style.transform = (isPresetSaver) ? "translateY(0px)":"translateY(100%)";
 }
 
-function saveP(i,pl)
+function saveP()
 {
-	pI = parseInt(gId(`p${i}id`).value);
-	if (!pI || pI < 1) pI = (i>0) ? i : getLowestUnusedP();
+	pI = getLowestUnusedP();
 	if (pI > 250) {alert("Preset ID must be 250 or less."); return;}
-	pN = gId(`p${i}txt`).value;
-	if (pN == "") pN = (pl?"Playlist ":"Preset ") + pI;
+	pN = gId(`ptxt`).value;
+	if (pN == "") {pN = "Preset " + pI};
 	var obj = {};
-	if (!gId(`p${i}cstgl`).checked) {
-		var raw = gId(`p${i}api`).value;
-		try {
-			obj = JSON.parse(raw);
-		} catch (e) {
-			obj.win = raw;
-			if (raw.length < 2) {
-				gId(`p${i}warn`).innerHTML = "&#9888; Please enter your API command first";
-				return;
-			} else if (raw.indexOf('{') > -1) {
-				gId(`p${i}warn`).innerHTML = "&#9888; Syntax error in custom JSON API command";
-				return;
-			} else if (raw.indexOf("Please") == 0) {
-				gId(`p${i}warn`).innerHTML = "&#9888; Please refresh the page before modifying this preset";
-				return;
-			}
-		}
-		obj.o = true;
-	} else {
-		if (pl) {
-			obj.playlist = plJson[i];
-			obj.on = true;
-			obj.o = true;
-		} else {
-			obj.ib = gId(`p${i}ibtgl`).checked;
-			obj.sb = gId(`p${i}sbtgl`).checked;
-			obj.sc = gId(`p${i}sbchk`).checked;
-			if (gId(`p${i}lmp`) && gId(`p${i}lmp`).value!=="") obj.ledmap = parseInt(gId(`p${i}lmp`).value);
-		}
-	}
+	obj.psave = pI;
+	obj.n = pN;
+	obj.ib = gId(`pibtgl`).checked;
+	obj.sb = false;
+	obj.sc = false;
+	obj.v = true;
 
-	obj.psave = pI; obj.n = pN;
-	var pQN = gId(`p${i}ql`).value;
-	if (pQN.length > 0) obj.ql = pQN;
-
-	showToast("Saving " + pN +" (" + pI + ")");
+	showToast("Saving " + pN);
 	requestJson(obj);
-	if (obj.o) {
-		pJson[pI] = obj;
-		delete pJson[pI].psave;
-		delete pJson[pI].o;
-		delete pJson[pI].v;
-		delete pJson[pI].time;
-	} else {
-		pJson[pI] = {"n":pN, "win":"Please refresh the page to see this newly saved command."};
-		if (obj.win) pJson[pI].win = obj.win;
-		if (obj.ql)  pJson[pI].ql = obj.ql;
-	}
 	populatePresets();
-	// resetPUtil();
 	setTimeout(()=>{pmtLast=0; loadPresets();}, 750); // force reloading of presets
 }
 
@@ -1207,6 +1169,21 @@ function getLowestUnusedP()
 	for (var key in pJson) if (key == l) l++;
 	if (l > 250) l = 250;
 	return l;
+}
+
+function delP(event, i) {
+	event.stopPropagation();
+	var bt = gId(`p${i}del`);
+	if (bt.dataset.cnf == 1) {
+		var obj = {"pdel": i};
+		requestJson(obj);
+		delete pJson[i];
+		populatePresets();
+		gId('putil').classList.add('staybot');
+	} else {
+		bt.style.color = "var(--c-r)";
+		bt.dataset.cnf = 1;
+	}
 }
 
 /*
@@ -1327,7 +1304,7 @@ function setPreset(i)
 {
 	var obj = {"ps": i};
 	if (isPlaylist(i)) obj.on = true;
-	showToast("Loading preset " + pName(i) +" (" + i + ")");
+	showToast("Loading preset " + pName(i));
 	requestJson(obj);
 }
 
