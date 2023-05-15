@@ -9,8 +9,8 @@
 
 //Defaults
 #define DEFAULT_CLIENT_SSID "Your_Network"
-#define DEFAULT_AP_SSID     "WLED-AP"
-#define DEFAULT_AP_PASS     "wled1234"
+#define DEFAULT_AP_SSID     "HyperCube Setup"
+#define DEFAULT_AP_PASS     "hypercube"
 #define DEFAULT_OTA_PASS    "wledota"
 
 //increase if you need more
