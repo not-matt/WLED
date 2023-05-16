@@ -859,8 +859,9 @@ void WLED::handleConnection()
 }
 
 // If status LED pin is allocated for other uses, does nothing
-// else blink at 1Hz when WLED_CONNECTED is false (no WiFi, ?? no Ethernet ??)
+// turn status LED on solid if WLED_CONNECTED
 // else blink at 2Hz when MQTT is enabled but not connected
+// else blink at 3Hz when apActive (no WiFi, ?? no Ethernet ??)
 // else turn the status LED off
 void WLED::handleStatusLED()
 {
@@ -875,15 +876,26 @@ void WLED::handleStatusLED()
 
   if (WLED_CONNECTED) {
     c = RGBW32(0,255,0,0);
-    ledStatusType = 2;
+    ledStatusType = 1;
   } else if (WLED_MQTT_CONNECTED) {
     c = RGBW32(0,128,0,0);
-    ledStatusType = 4;
+    ledStatusType = 2;
   } else if (apActive) {
     c = RGBW32(0,0,255,0);
-    ledStatusType = 1;
+    ledStatusType = 3;
   }
-  if (ledStatusType) {
+  // handle status 1 seperately. Turn status on solid when wifi connected
+  if (ledStatusType == 1) {
+      #if STATUSLED>=0
+        #ifdef STATUSLEDINVERTED
+        digitalWrite(STATUSLED, LOW);
+        #else
+        digitalWrite(STATUSLED, HIGH);
+        #endif
+      #else
+        busses.setStatusPixel(c);
+      #endif
+  } else if (ledStatusType) {
     if (millis() - ledStatusLastMillis >= (1000/ledStatusType)) {
       ledStatusLastMillis = millis();
       ledStatusState = !ledStatusState;
