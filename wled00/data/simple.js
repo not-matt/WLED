@@ -441,14 +441,16 @@ function populateQL()
 			cn += `<button class="btn btn-xs psts" id="p${key[0]}qlb" title="${key[2]?key[2]:''}" onclick="setPreset(${key[0]});">${key[1]}</button>`;
 		}
 	}
-	gId('pql').innerHTML = cn;
+	console.log(gId('quickPres').innerHTML);
+	gId('quickPres').innerHTML = cn;
+	console.log(gId('quickPres').innerHTML);
 }
 
 function populatePresets()
 {
 	if (!pJson) {pJson={};return};
 	delete pJson["0"];
-	var cn = ""; //`<p class="label">All presets</p>`;
+	var cn = `<p class="label">Only delete the presets you make, or "Auto 🎲" will not work!</p>`;
 	var arr = Object.entries(pJson);
 	arr.sort(cmpP);
 	pQL = [];
@@ -831,6 +833,7 @@ function updateUI()
 	if (lJson && lJson.length) {
 		for (var i=0; i<lJson.length; i++) if (lJson[i].id == selectedPal) {sel = i; break;}
 		gId('palBtn').innerHTML = '<i class="icons">&#xe2b3;</i> ' + lJson[sel].name;
+		gId('palLbl').innerHTML = '<i class="icons">&#xe2b3;</i> ' + lJson[sel].name;
 	}
 	sel = 0;
 	if (eJson && eJson.length) {
@@ -838,6 +841,7 @@ function updateUI()
 		var posAt = eJson[sel].name.indexOf("@");
 		if (posAt<=0) posAt=999;
 		gId('fxBtn').innerHTML = '<i class="icons">&#xe0e8;</i> ' + eJson[sel].name.substr(0,posAt);
+		gId('fxLbl').innerHTML = '<i class="icons">&#xe0e8;</i> ' + eJson[sel].name.substr(0,posAt);
 	}
 
 	updateTrail(gId('sliderBri'));
@@ -1148,9 +1152,13 @@ function saveP()
 	pI = getLowestUnusedP();
 	if (pI > 250) {alert("Preset ID must be 250 or less."); return;}
 	pN = gId(`ptxt`).value;
+	pQLL = gId(`pqll`).value;
+	if (pQLL == "") {pQLL = "❔"};
 	if (pN == "") {pN = "Preset " + pI};
+	pN = pN + " " + pQLL // Add the quick load label to the name for visual consistency
 	var obj = {};
 	obj.psave = pI;
+	obj.ql = pQLL;
 	obj.n = pN;
 	obj.ib = gId(`pibtgl`).checked;
 	obj.sb = false;
@@ -1224,10 +1232,9 @@ function selSeg(s)
 
 function tglPalDropdown()
 {
-	var element = gId("palDropdown"); // Using a class instead, see note below.
+	var element = gId("palDropdown"); 
 	element.classList.toggle('animated');
 	var p = element.style;
-	//p.display = (p.display==='block'?'none':'block');
 	gId('fxDropdown').classList.remove('animated');
 	if (p.display==='block')
 		gId('palDropdown').scrollIntoView({
@@ -1238,13 +1245,24 @@ function tglPalDropdown()
 
 function tglFxDropdown()
 {
-	var element = gId("fxDropdown"); // Using a class instead, see note below.
+	var element = gId("fxDropdown"); 
 	element.classList.toggle('animated');
 	var p = element.style;
-	//p.display = (p.display==='block'?'none':'block');
 	gId('palDropdown').classList.remove('animated');
 	if (p.display==='block')
 		gId('fxDropdown').scrollIntoView({
+			behavior: 'smooth',
+			block: 'center',
+		});
+}
+
+function tglPsDropdown()
+{
+	var element = gId("pcont"); 
+	element.classList.toggle('animated');
+	var p = element.style;
+	if (p.display==='block')
+		gId('pcont').scrollIntoView({
 			behavior: 'smooth',
 			block: 'center',
 		});
@@ -1302,8 +1320,16 @@ function setLor(i)
 
 function setPreset(i)
 {
-	var obj = {"ps": i};
-	if (isPlaylist(i)) obj.on = true;
+	var obj = {"ps":i};
+	if (!isPlaylist(i) && pJson && pJson[i] && (!pJson[i].win || pJson[i].win.indexOf("Please") <= 0)) {
+		// we will send the complete preset content as to avoid delay introduced by
+		// async nature of applyPreset() and having to read the preset from file system.
+		obj = {"pd":i}; // use "pd" instead of "ps" to indicate that we are sending the preset content directly
+		Object.assign(obj, pJson[i]);
+		delete obj.ql; // no need for quick load
+		delete obj.n;  // no need for name
+	}
+	if (isPlaylist(i)) obj.on = true; // force on
 	showToast("Loading preset " + pName(i));
 	requestJson(obj);
 }

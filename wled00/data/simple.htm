@@ -62,7 +62,7 @@
 	<div class="tab top">
 		<div class="btnwrap">
 			<button id="buttonPower" onclick="togglePower()"><i class="icons">&#xe08f;</i><p class="tab-label">Power</p></button>
-			<!-- <button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button> -->
+			<button id="buttonI" onclick="toggleInfo()"><i class="icons">&#xe066;</i><p class="tab-label">Info</p></button>
 			<!-- <button id="buttonNodes" onclick="toggleNodes()"><i class="icons">&#xe22d;</i><p class="tab-label">Nodes</p></button> -->
             <!-- <button id="buttonCP" onclick="tglCP()"><i class="icons">&#xe2b3;</i><p class="tab-label">Expand</p></button> -->
             <!-- button id="buttonBri" onclick="tglBri()"><i class="icons">&#xe2a6;</i><p class="tab-label">Brightness</p></button -->
@@ -94,7 +94,6 @@
 		<div id="picker" class="center"></div>
 
 		<div id="QCS" class="center">
-			<p class="label h">Solid color</p>
 			<div id="qcs-w" class="center">
 				<div class="qcs" onclick="pC('#ff0000');" title="Red" style="background-color:#ff0000;"></div>
 				<div class="qcs" onclick="pC('#ffa000');" title="Orange" style="background-color:#ffa000;"></div>
@@ -176,14 +175,24 @@
 			<div id="segcont"></div>
 		</div>
 
+		<div class="center">
+			<p class="label h">Effect & Palette</p>
+			<div class="label" id="fxLbl"><i class="icons">&#xe22d;</i> Effect</div>
+			<div class="label" id="palLbl"><i class="icons">&#xe22d;</i> Palette</div>
+		</div>
+
 		<div id="Presets" class="center">
-        	<p class="label h">Presets</p>
+			<p class="label h">Presets</p>
+			<div id="quickPres">
+			</div>
 			<!-- <div class="fnd">
 				<input type="text" class="fnd" placeholder="Search" oninput="search(this,'pcont')" onfocus="search(this)" />
 				<i class="icons clear-icon" onclick="clean(this);">&#xe38f;</i>
 				<i class="icons search-icon">&#xe0a1;</i>
 			</div> -->
-			<div id="pcont" class="list"></div>
+			<div onclick="tglPsDropdown()" class="btn" id="psBtn"><i class="icons">&#xe22d;</i> View All</div>
+			<!-- <div id="fxDropdown" class="dd-content"> -->
+			<div id="pcont" class="dd-content"></div>
 		</div>
 	</div>
 </div>
@@ -203,6 +212,7 @@
 	<button class="btn" onclick="toggleNodes()">Instance List</button>
 	<button class="btn" id="resetbtn" onclick="cnfReset()">Reboot WLED</button>
 	</div>
+	<span class="h">Modified for HyperCube by Matthew Bowley - <a href="https://github.com/not-matt" target="_blank">GitHub</a></span></br>
 	<span class="h">Made with <span id="heart">&#10084;&#xFE0E;</span> by Aircoookie and the <a href="https://wled.discourse.group/" target="_blank">WLED community</a></span>
 </div>
 
@@ -235,6 +245,7 @@
 <div id="presetSaver" class="modal">
 	<div id="putil" class="staybot">
 		<input type="text" class="ptxt" id="ptxt" autocomplete="off" maxlength=32 value="" placeholder="Preset name..."/>
+		<div class="c">Icon: <input type="text" class="stxt" maxlength=2 value="💡" id="pqll" autocomplete="off"/></div>
 		<label class="check revchkl">
 			<span class="lstIname">
 			Include brightness
